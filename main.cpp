@@ -28,7 +28,7 @@ const int scrH = 1000;
 const int fW = 12;
 const int fH = 21;
 
-const int t_size = 20;
+const int t_size = 26;
 
 struct Vec2Int {
 	int x;
@@ -59,8 +59,18 @@ public:
 
 Map field;
 
+struct Tetromino {
+	// Tetromino type (I, O, T, J, L, S, Z)
+	TetrominoType type;
+	int px = (fW / 2) - 1;
+	int py = 0;
+	int rotation = 0;
+};
+
+Tetromino piece;
+
 // The state of each tile on the map at the start
-void init_fieldState() {
+void init_field_state() {
 	for (int y = 0; y < fH; y++) {
 		for (int x = 0; x < fW; x++) {
 			if (x == 0 || x == fW - 1 || y == fH - 1) {
@@ -68,6 +78,17 @@ void init_fieldState() {
 			}
 			else {
 				field[{x,y}].state = EMPTY;
+			}
+		}
+	}
+}
+
+// Copy given tetromino type to the map
+void piece_to_map(TetrominoType type) {
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			if (tetrominoShapes[type][y][x] == 1) {
+				field[{(x + fW/2) - 1, y}].state = HAS_VALUE;
 			}
 		}
 	}
@@ -82,16 +103,19 @@ Vector2 offset_map(Vector2 tile_pos) {
 
 // Check tile's state to render it
 // and offset playing field to the center of the screen while rendering
-void render_field() {
+void render_tile() {
 	for (int y = 0; y < fH; y++) {
 		for (int x = 0; x < fW; x++) {
 			Vector2 rec_pos = { x * t_size, y * t_size };
 			Vector2 rec_size = { t_size, t_size };
-			if (field[{x, y}].state == BORDER) {
-				DrawRectangleV(offset_map(rec_pos), rec_size, WHITE);
-			}
-			else {
+			if (field[{x, y}].state == EMPTY){
 				DrawRectangleV(offset_map(rec_pos), rec_size, BLACK);
+			}
+			if (field[{x, y}].state == BORDER) {
+				DrawRectangleV(offset_map(rec_pos), rec_size, DARKGRAY);
+			}
+			if (field[{x, y}].state == HAS_VALUE) {
+				DrawRectangleV(offset_map(rec_pos), rec_size, YELLOW);
 			}
 		}
 	}
@@ -100,7 +124,7 @@ void render_field() {
 void render() {
 	BeginDrawing();
 		ClearBackground(BLACK);
-			render_field();
+			render_tile();
 	EndDrawing();
 }
 
@@ -108,12 +132,19 @@ int main() {
 	//Initialization
 	InitWindow(scrW, scrH, "tetris");
 
-	init_fieldState();
+	init_field_state();
 	
 	SetTargetFPS(60);
 	
 	// Main game loop
 	while (!WindowShouldClose()) {
+		// Game timing
+
+		// Input
+
+		// Game logic
+		piece_to_map(TETROMINO_Z);
+
 		// Update
 		render();
 	}
