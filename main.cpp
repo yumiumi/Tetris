@@ -8,17 +8,6 @@
 #include <intrin.h>
 #include "tetromino.hpp"
 
-// to do:
-// tetrominos 
-// randomly choose one tetromino, place it in the top-middle position of the field
-// user input
-// tetromino falls - ticks 
-// rotation
-// collision
-// check if tetromino fits
-// clear a line when it's full
-// score
-
 using namespace std;
 
 const int scrW = 700;
@@ -28,7 +17,8 @@ const int scrH = 1000;
 const int fW = 12;
 const int fH = 21;
 
-const int t_size = 26;
+// Tile size
+const int tile = 26;
 
 struct Vec2Int {
 	int x;
@@ -62,12 +52,11 @@ Map field;
 struct Tetromino {
 	// Tetromino type (I, O, T, J, L, S, Z)
 	TetrominoType type;
-	int px = (fW / 2) - 1;
-	int py = 0;
+	Vector2 p = { 0,0 };
 	int rotation = 0;
 };
 
-Tetromino piece;
+Tetromino tetromino;
 
 // The state of each tile on the map at the start
 void init_field_state() {
@@ -83,8 +72,14 @@ void init_field_state() {
 	}
 }
 
+void create_tetromino() {
+	tetromino.type = TETROMINO_L; 
+	tetromino.p = { 0,0 };
+	tetromino.rotation = 0;
+}
+
 // Copy given tetromino type to the map
-void piece_to_map(TetrominoType type) {
+void tetromino_to_map(TetrominoType type) {
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			if (tetrominoShapes[type][y][x] == 1) {
@@ -94,28 +89,49 @@ void piece_to_map(TetrominoType type) {
 	}
 }
 
-// function that moves position of given tile to the center of the screen
-Vector2 offset_map(Vector2 tile_pos) {
-	float w_off = scrW/2 - fW/2 * t_size;
-	float h_off = scrH/2 - fH/2 * t_size;
-	return { tile_pos.x + w_off, tile_pos.y + h_off };
+Vector2 tile_to_px(Vector2 v) {
+	return { v.x * tile, v.y * tile };
+}
+
+// Function that moves position of given tile to the center of the screen
+Vector2 centerize(Vector2 tile_pos) {
+	float w = scrW/2 - fW/2 * tile;
+	float h = scrH/2 - fH/2 * tile;
+	return { tile_pos.x + w , tile_pos.y + h };
 }
 
 // Check tile's state to render it
 // and offset playing field to the center of the screen while rendering
-void render_tile() {
+void render_map() {
+	Vector2 t_size = { tile, tile };
 	for (int y = 0; y < fH; y++) {
 		for (int x = 0; x < fW; x++) {
-			Vector2 rec_pos = { x * t_size, y * t_size };
-			Vector2 rec_size = { t_size, t_size };
+
+			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
+
 			if (field[{x, y}].state == EMPTY){
-				DrawRectangleV(offset_map(rec_pos), rec_size, BLACK);
+				DrawRectangleV(centerize(scale_tile), t_size, BLACK);
 			}
 			if (field[{x, y}].state == BORDER) {
-				DrawRectangleV(offset_map(rec_pos), rec_size, DARKGRAY);
+				DrawRectangleV(centerize(scale_tile), t_size, DARKGRAY);
 			}
-			if (field[{x, y}].state == HAS_VALUE) {
-				DrawRectangleV(offset_map(rec_pos), rec_size, YELLOW);
+			/*if (field[{x, y}].state == HAS_VALUE) {
+				DrawRectangleV(centerize(px_pos), rec_size, GREEN)
+			}*/
+		}
+	}
+}
+
+void render_tetromino(Tetromino const& t) {
+	Vector2 t_size = { tile, tile };
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+
+			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
+			Vector2 piece_pos = Vector2Add(t.p, scale_tile);
+
+			if (tetrominoShapes[t.type][y][x] == 1) {
+				DrawRectangleV(centerize(piece_pos), t_size, YELLOW);
 			}
 		}
 	}
@@ -124,8 +140,21 @@ void render_tile() {
 void render() {
 	BeginDrawing();
 		ClearBackground(BLACK);
-			render_tile();
+			render_map();
+			render_tetromino(tetromino);
 	EndDrawing();
+}
+
+void input_handler() {
+	if (IsKeyPressed(KEY_RIGHT)) {
+		tetromino.p.x += tile;
+	}
+	if (IsKeyPressed(KEY_LEFT)) {
+		tetromino.p.x -= tile;
+	}
+	if (IsKeyPressed(KEY_DOWN)) {
+		tetromino.p.y += tile;
+	}
 }
 
 int main() {
@@ -133,6 +162,9 @@ int main() {
 	InitWindow(scrW, scrH, "tetris");
 
 	init_field_state();
+
+	// Create a new tetromino when old is locked
+	create_tetromino();
 	
 	SetTargetFPS(60);
 	
@@ -141,10 +173,10 @@ int main() {
 		// Game timing
 
 		// Input
-
+		input_handler();
 		// Game logic
-		piece_to_map(TETROMINO_Z);
-
+		//check collision 
+		//tetromino_to_map(tetromino.type);
 		// Update
 		render();
 	}
