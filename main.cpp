@@ -128,10 +128,11 @@ void render_tetromino(Tetromino const& t) {
 		for (int x = 0; x < 4; x++) {
 
 			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
-			Vector2 piece_pos = Vector2Add(t.p, scale_tile);
+			Vector2 piece_pos = centerize(Vector2Add(t.p, scale_tile));
+			piece_pos.x += (fW / 2 - 1) * tile;
 
 			if (tetrominoShapes[t.type][y][x] == 1) {
-				DrawRectangleV(centerize(piece_pos), t_size, YELLOW);
+				DrawRectangleV(piece_pos, t_size, YELLOW);
 			}
 		}
 	}
