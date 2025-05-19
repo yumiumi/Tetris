@@ -53,7 +53,7 @@ struct Tetromino {
 	// Tetromino type (I, O, T, J, L, S, Z)
 	TetrominoType type;
 	Vector2 p = { 0,0 };
-	int rotation = 0;
+	int local_template[4][4];
 };
 
 Tetromino tetromino;
@@ -72,10 +72,54 @@ void init_field_state() {
 	}
 }
 
+TetrominoType rand_type() {
+	return TetrominoType(GetRandomValue(0,6));
+}
+
 void create_tetromino() {
-	tetromino.type = TETROMINO_L; 
+	tetromino.type = rand_type(); 
 	tetromino.p = { 0,0 };
-	tetromino.rotation = 0;
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			tetromino.local_template[y][x] = tetrominoShapes[tetromino.type][y][x];
+		}
+	}
+}
+
+// Rotates by 90 
+void rotate(Tetromino* t) {
+	int local_tpl_copy[4][4];
+
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			local_tpl_copy[y][x] = t->local_template[y][x];
+			t->local_template[y][x] = 0;
+		}
+	}
+
+	Vector2 centers[7] = {
+		{ 1.5, 1.5 },
+		{ 1,1 },
+		{ 1.5, 0.5 },
+		{ 1,1 },
+		{ 2,1 },
+		{ 1,1 },
+		{ 1,1 },
+	};
+
+	Vector2 center = centers[t->type];
+
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			if (local_tpl_copy[y][x] == 1) {
+				Vector2 cell = { float(x), float(y) };
+				Vector2 rel_center = Vector2Subtract(cell, center);
+				Vector2 rotated_v = Vector2Rotate(rel_center, 90.f * DEG2RAD);
+				cell = Vector2Add(rotated_v, center);
+				t->local_template[int(round(cell.y))][int(round(cell.x))] = 1;
+			}
+		}
+	}
 }
 
 // Copy given tetromino type to the map
@@ -129,9 +173,9 @@ void render_tetromino(Tetromino const& t) {
 
 			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
 			Vector2 piece_pos = centerize(Vector2Add(t.p, scale_tile));
-			piece_pos.x += (fW / 2 - 1) * tile;
+			piece_pos.x += (fW / 2 - 2) * tile;
 
-			if (tetrominoShapes[t.type][y][x] == 1) {
+			if (tetromino.local_template[y][x] == 1) {
 				DrawRectangleV(piece_pos, t_size, YELLOW);
 			}
 		}
@@ -155,6 +199,9 @@ void input_handler() {
 	}
 	if (IsKeyPressed(KEY_DOWN)) {
 		tetromino.p.y += tile;
+	}
+	if (IsKeyPressed(KEY_UP)) {
+		rotate(&tetromino);
 	}
 }
 
