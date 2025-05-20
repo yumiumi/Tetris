@@ -78,7 +78,7 @@ TetrominoType rand_type() {
 
 void create_tetromino() {
 	tetromino.type = rand_type(); 
-	tetromino.p = { 0,0 };
+	tetromino.p = { 4,0 };
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			tetromino.local_template[y][x] = tetrominoShapes[tetromino.type][y][x];
@@ -119,6 +119,24 @@ void rotate(Tetromino* t) {
 				t->local_template[int(round(cell.y))][int(round(cell.x))] = 1;
 			}
 		}
+	}
+}
+
+void input_handler() {
+	if (IsKeyPressed(KEY_RIGHT)) {
+		tetromino.p.x += 1;
+		cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+	}
+	if (IsKeyPressed(KEY_LEFT)) {
+		tetromino.p.x -= 1;
+		cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+	}
+	if (IsKeyPressed(KEY_DOWN)) {
+		tetromino.p.y += 1;
+		cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+	}
+	if (IsKeyPressed(KEY_UP)) {
+		rotate(&tetromino);
 	}
 }
 
@@ -170,12 +188,9 @@ void render_tetromino(Tetromino const& t) {
 	Vector2 t_size = { tile, tile };
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
-
-			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
-			Vector2 piece_pos = centerize(Vector2Add(t.p, scale_tile));
-			piece_pos.x += (fW / 2 - 2) * tile;
-
 			if (tetromino.local_template[y][x] == 1) {
+				Vector2 scale_tile = tile_to_px({ float(x), float(y) });
+				Vector2 piece_pos = centerize(Vector2Add(tile_to_px(t.p), scale_tile));
 				DrawRectangleV(piece_pos, t_size, YELLOW);
 			}
 		}
@@ -188,21 +203,6 @@ void render() {
 			render_map();
 			render_tetromino(tetromino);
 	EndDrawing();
-}
-
-void input_handler() {
-	if (IsKeyPressed(KEY_RIGHT)) {
-		tetromino.p.x += tile;
-	}
-	if (IsKeyPressed(KEY_LEFT)) {
-		tetromino.p.x -= tile;
-	}
-	if (IsKeyPressed(KEY_DOWN)) {
-		tetromino.p.y += tile;
-	}
-	if (IsKeyPressed(KEY_UP)) {
-		rotate(&tetromino);
-	}
 }
 
 int main() {
