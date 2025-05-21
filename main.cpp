@@ -122,21 +122,93 @@ void rotate(Tetromino* t) {
 	}
 }
 
+bool can_place(Tetromino t, int pos_x, int pos_y) {
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			if (t.local_template[y][x] != 1) {
+				continue;
+			}
+			if (pos_x + x >= 0 && pos_x + x <= fW) {
+				if (pos_y + y >= 0 && pos_y + y <= fH) {
+					int tile_st = int(field[{pos_x + x, pos_y + y}].state);
+					if (tile_st != 0) {
+						return false;
+					}
+				}
+			}
+		}
+	}
+	return true;
+}
+
 void input_handler() {
+	int copy_pos_x = 0;
+	int copy_pos_y = 0;
+
 	if (IsKeyPressed(KEY_RIGHT)) {
-		tetromino.p.x += 1;
-		cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		copy_pos_x = tetromino.p.x + 1;
+		copy_pos_y = tetromino.p.y;
+		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+			tetromino.p.x += 1;
+			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		}
 	}
 	if (IsKeyPressed(KEY_LEFT)) {
-		tetromino.p.x -= 1;
-		cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		copy_pos_x = tetromino.p.x - 1;
+		copy_pos_y = tetromino.p.y;
+		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+			tetromino.p.x -= 1;
+			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		}
 	}
 	if (IsKeyPressed(KEY_DOWN)) {
-		tetromino.p.y += 1;
-		cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		copy_pos_x = tetromino.p.x;
+		copy_pos_y = tetromino.p.y + 1;
+		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+			tetromino.p.y += 1;
+			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		}
 	}
 	if (IsKeyPressed(KEY_UP)) {
-		rotate(&tetromino);
+		Tetromino t_copy = tetromino;
+		copy_pos_x = t_copy.p.x;
+		copy_pos_y = t_copy.p.y;
+		rotate(&t_copy);
+		if (can_place(t_copy, copy_pos_x, copy_pos_y)) {
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x + 1, copy_pos_y)) {
+			tetromino.p.x += 1;
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x - 1, copy_pos_y)) {
+			tetromino.p.x -= 1;
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x, copy_pos_y - 1)) {
+			tetromino.p.y -= 1; 
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x + 1, copy_pos_y - 1)) {
+			tetromino.p.x += 1;
+			tetromino.p.y -= 1;
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x - 1, copy_pos_y - 1)) {
+			tetromino.p.x -= 1;
+			tetromino.p.y -= 1;
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x + 2, copy_pos_y - 2)) {
+			tetromino.p.x += 2;
+			tetromino.p.y -= 2;
+			rotate(&tetromino);
+		}
+		else if (can_place(t_copy, copy_pos_x - 2, copy_pos_y - 2)) {
+			tetromino.p.x -= 2;
+			tetromino.p.y -= 2;
+			rotate(&tetromino);
+		}
 	}
 }
 
@@ -197,6 +269,9 @@ void render_tetromino(Tetromino const& t) {
 	}
 }
 
+void change_type(Tetromino* t) {
+}
+
 void render() {
 	BeginDrawing();
 		ClearBackground(BLACK);
@@ -221,6 +296,10 @@ int main() {
 		// Game timing
 
 		// Input
+		if (IsKeyPressed(KEY_P)) {
+			create_tetromino();
+		}
+
 		input_handler();
 		// Game logic
 		//check collision 
