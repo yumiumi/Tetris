@@ -13,6 +13,8 @@ using namespace std;
 const int scrW = 700;
 const int scrH = 1000;
 
+bool edit_mode = false;
+
 // width and height of playing field
 const int fW = 12;
 const int fH = 21;
@@ -27,7 +29,7 @@ struct Vec2Int {
 
 enum TileState {
 	EMPTY,
-	HAS_VALUE,
+	HAS_VALUE = 2,
 	BORDER,
 };
 
@@ -58,15 +60,28 @@ struct Tetromino {
 
 Tetromino tetromino;
 
+// Copy given tetromino type to the map
+/*void tetromino_to_map(TetrominoType type) {
+	int pos_x = 1;
+	int pos_y = fH - 4;
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			if (tetrominoShapes[type][y][x] == 1) {
+				field[{x + pos_x, y + pos_y}].state = HAS_VALUE;
+			}
+		}
+	}
+}*/
+
 // The state of each tile on the map at the start
 void init_field_state() {
 	for (int y = 0; y < fH; y++) {
 		for (int x = 0; x < fW; x++) {
+			if (x > 0 || x < fW - 1 || y < fH - 1 ){
+				field[{x,y}].state = EMPTY;
+			}
 			if (x == 0 || x == fW - 1 || y == fH - 1) {
 				field[{x, y}].state = BORDER;
-			}
-			else {
-				field[{x,y}].state = EMPTY;
 			}
 		}
 	}
@@ -102,7 +117,7 @@ void rotate(Tetromino* t) {
 		{ 1,1 },
 		{ 1.5, 0.5 },
 		{ 1,1 },
-		{ 2,1 },
+		{ 1,1 },
 		{ 1,1 },
 		{ 1,1 },
 	};
@@ -140,6 +155,7 @@ bool can_place(Tetromino t, int pos_x, int pos_y) {
 	}
 	return true;
 }
+
 
 void input_handler() {
 	int copy_pos_x = 0;
@@ -212,22 +228,14 @@ void input_handler() {
 	}
 }
 
-// Copy given tetromino type to the map
-void tetromino_to_map(TetrominoType type) {
-	for (int y = 0; y < 4; y++) {
-		for (int x = 0; x < 4; x++) {
-			if (tetrominoShapes[type][y][x] == 1) {
-				field[{(x + fW/2) - 1, y}].state = HAS_VALUE;
-			}
-		}
-	}
-}
+// Px_to_tile and tile_to_px - 2 functions. Use centerize in both of them, especially in tile_to_px. 
 
 Vector2 tile_to_px(Vector2 v) {
 	return { v.x * tile, v.y * tile };
 }
 
 // Function that moves position of given tile to the center of the screen
+// returns position in pixels
 Vector2 centerize(Vector2 tile_pos) {
 	float w = scrW/2 - fW/2 * tile;
 	float h = scrH/2 - fH/2 * tile;
@@ -243,15 +251,15 @@ void render_map() {
 
 			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
 
-			if (field[{x, y}].state == EMPTY){
+			if (field[{x, y}].state == EMPTY) {
 				DrawRectangleV(centerize(scale_tile), t_size, BLACK);
 			}
 			if (field[{x, y}].state == BORDER) {
 				DrawRectangleV(centerize(scale_tile), t_size, DARKGRAY);
 			}
-			/*if (field[{x, y}].state == HAS_VALUE) {
-				DrawRectangleV(centerize(px_pos), rec_size, GREEN)
-			}*/
+			if (field[{x, y}].state == HAS_VALUE) {
+				DrawRectangleV(centerize(scale_tile), t_size, GRAY);
+			}
 		}
 	}
 }
@@ -269,7 +277,24 @@ void render_tetromino(Tetromino const& t) {
 	}
 }
 
-void change_type(Tetromino* t) {
+void render_data(bool game_mode) {
+	DrawText("Edit mode: ", 50, 50, 20, WHITE);
+	DrawText(TextFormat("%d", edit_mode ? 1 : 0), 155, 50, 20, WHITE);
+}
+
+void edit_map() {
+	float w = scrW/2 - fW/2 * tile;
+	float h = scrH/2 - fH/2 * tile;
+	if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+		Vector2 mouse_px = GetMousePosition();
+		mouse_px = { mouse_px.x - w, mouse_px.y - h };
+		cout << mouse_px.x << ", " << mouse_px.y << endl;
+		// Convert mose position from pixels to tiles
+		Vector2 mouse_tile = { floor(mouse_px.x / tile), floor(mouse_px.y / tile) };
+		cout << mouse_tile.x << ", " << mouse_tile.y << endl;
+
+		field[{int(mouse_tile.x), int(mouse_tile.y)}].state = HAS_VALUE;
+	}
 }
 
 void render() {
@@ -277,6 +302,7 @@ void render() {
 		ClearBackground(BLACK);
 			render_map();
 			render_tetromino(tetromino);
+			render_data(edit_mode);
 	EndDrawing();
 }
 
@@ -288,6 +314,8 @@ int main() {
 
 	// Create a new tetromino when old is locked
 	create_tetromino();
+
+	//tetromino_to_map(TETROMINO_L);
 	
 	SetTargetFPS(60);
 	
@@ -296,11 +324,18 @@ int main() {
 		// Game timing
 
 		// Input
-		if (IsKeyPressed(KEY_P)) {
-			create_tetromino();
-		}
 
 		input_handler();
+
+		if (IsKeyPressed(KEY_E)) {
+			edit_mode = !edit_mode;
+		}
+		if (edit_mode) {
+			edit_map();
+			if (IsKeyPressed(KEY_P)) {
+				create_tetromino();
+			}
+		}
 		// Game logic
 		//check collision 
 		//tetromino_to_map(tetromino.type);
