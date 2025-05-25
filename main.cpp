@@ -61,17 +61,17 @@ struct Tetromino {
 Tetromino tetromino;
 
 // Copy given tetromino type to the map
-/*void tetromino_to_map(TetrominoType type) {
+void lock_tetromino(Tetromino t) {
 	int pos_x = 1;
 	int pos_y = fH - 4;
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
-			if (tetrominoShapes[type][y][x] == 1) {
-				field[{x + pos_x, y + pos_y}].state = HAS_VALUE;
+			if (tetromino.local_template[y][x] == 1) {
+				field[{int(x + t.p.x), int(y + t.p.y)}].state = HAS_VALUE;
 			}
 		}
 	}
-}*/
+}
 
 // The state of each tile on the map at the start
 void init_field_state() {
@@ -183,6 +183,10 @@ void input_handler() {
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.y += 1;
 			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
+		}
+		else {
+			lock_tetromino(tetromino);
+			create_tetromino();
 		}
 	}
 	if (IsKeyPressed(KEY_UP)) {
