@@ -15,6 +15,12 @@ const int scrH = 1000;
 
 bool edit_mode = false;
 
+const float ticks_per_sec = 60; // 60 t/sec
+const float frames_per_sec = 60;
+
+int tick_counter = 0; // count every tick btw drops
+int fall_interval = 30; // how often tetromino should drop by 1 cell (every 30 ticks)
+
 // width and height of playing field
 const int fW = 12;
 const int fH = 21;
@@ -301,6 +307,18 @@ void edit_map() {
 	}
 }
 
+void tick() {
+	if (tick_counter % fall_interval == 0) {
+		if (can_place(tetromino, tetromino.p.x, tetromino.p.y + 1)) {
+			tetromino.p.y += 1;
+		}
+		else {
+			lock_tetromino(tetromino);
+			create_tetromino();
+		}
+	}
+}
+
 void render() {
 	BeginDrawing();
 		ClearBackground(BLACK);
@@ -314,22 +332,16 @@ int main() {
 	//Initialization
 	InitWindow(scrW, scrH, "tetris");
 
+	double next_tick = 0;
+	double next_frame = 0;
+
 	init_field_state();
 
 	// Create a new tetromino when old is locked
 	create_tetromino();
-
-	//tetromino_to_map(TETROMINO_L);
-	
-	SetTargetFPS(60);
 	
 	// Main game loop
 	while (!WindowShouldClose()) {
-		// Game timing
-
-		// Input
-
-		input_handler();
 
 		if (IsKeyPressed(KEY_E)) {
 			edit_mode = !edit_mode;
@@ -340,11 +352,32 @@ int main() {
 				create_tetromino();
 			}
 		}
-		// Game logic
-		//check collision 
-		//tetromino_to_map(tetromino.type);
-		// Update
-		render();
+
+		// should we simulate tick now?
+		if (GetTime() >= next_tick) {
+			input_handler();
+			next_tick = next_tick + (1.0 / ticks_per_sec);
+			tick_counter++;
+			tick();
+		}
+
+		// should we render frame now?
+		if (GetTime() >= next_frame) {
+			next_frame = next_frame + (1.0 / frames_per_sec);
+			render();
+		}
+
+		// find which happens sooner: tick or render
+		double soonest_event = next_tick < next_frame ? next_tick : next_frame;
+
+		// change timestamp to duration, we want to sleep for duration
+		double sleep_duration = soonest_event - GetTime();
+
+		// sleep duration can be negative or 0 - in this case it`s not allowed to sleep
+		if (sleep_duration > 0.0) {
+			// wait for next event
+			WaitTime(sleep_duration);
+		}
 	}
 	
 	// De-Initialization
