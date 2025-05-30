@@ -15,11 +15,11 @@ const int scrH = 1000;
 
 bool edit_mode = false;
 
-const float ticks_per_sec = 60; // 60 t/sec
+const float ticks_per_sec = 10; // t/sec
 const float frames_per_sec = 60;
 
 int tick_counter = 0; // count every tick btw drops
-int fall_interval = 30; // how often tetromino should drop by 1 cell (every 30 ticks)
+int fall_interval = 10; // how often tetromino should drop by 1 cell
 
 // width and height of playing field
 const int fW = 12;
@@ -236,6 +236,16 @@ void input_handler() {
 			rotate(&tetromino);
 		}
 	}
+	if (IsKeyPressed(KEY_SPACE)) {
+		copy_pos_x = tetromino.p.x;
+		copy_pos_y = tetromino.p.y;
+		while(can_place(tetromino, copy_pos_x, copy_pos_y + 1)){
+			tetromino.p.y += 1;
+			copy_pos_y = tetromino.p.y;
+		}
+		lock_tetromino(tetromino);
+		create_tetromino();
+	}
 }
 
 // Px_to_tile and tile_to_px - 2 functions. Use centerize in both of them, especially in tile_to_px. 
@@ -271,6 +281,15 @@ void render_map() {
 				DrawRectangleV(centerize(scale_tile), t_size, GRAY);
 			}
 		}
+	}
+}
+
+void render_grid() {
+	for (int y = 0; y <= fH; y++) {
+		DrawLineV(centerize({ 0.f, float (y * tile) }), centerize ({ fW * tile , float (y * tile) }), DARKGRAY);
+	}
+	for (int x = 0; x <= fW; x++) {
+		DrawLineV(centerize({ float (x * tile), 0.f }), centerize ({ float (x * tile), fH * tile }), DARKGRAY);
 	}
 }
 
@@ -323,6 +342,7 @@ void render() {
 	BeginDrawing();
 		ClearBackground(BLACK);
 			render_map();
+			render_grid();
 			render_tetromino(tetromino);
 			render_data(edit_mode);
 	EndDrawing();
@@ -353,9 +373,10 @@ int main() {
 			}
 		}
 
+		input_handler();
+
 		// should we simulate tick now?
 		if (GetTime() >= next_tick) {
-			input_handler();
 			next_tick = next_tick + (1.0 / ticks_per_sec);
 			tick_counter++;
 			tick();
