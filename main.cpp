@@ -15,11 +15,11 @@ const int scrH = 1000;
 
 bool edit_mode = false;
 
-const float ticks_per_sec = 10; // t/sec
+const float ticks_per_sec = 30; // t/sec
 const float frames_per_sec = 60;
 
 int tick_counter = 0; // count every tick btw drops
-int fall_interval = 10; // how often tetromino should drop by 1 cell
+int fall_interval = 15; // how often tetromino should drop by 1 cell
 
 // width and height of playing field
 const int fW = 12;
@@ -27,6 +27,8 @@ const int fH = 21;
 
 // Tile size
 const int tile = 26;
+
+int older_pos_y = 0;
 
 struct Vec2Int {
 	int x;
@@ -184,6 +186,7 @@ void input_handler() {
 		}
 	}
 	if (IsKeyPressed(KEY_DOWN)) {
+		older_pos_y = tetromino.p.y;
 		copy_pos_x = tetromino.p.x;
 		copy_pos_y = tetromino.p.y + 1;
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
@@ -327,14 +330,21 @@ void edit_map() {
 }
 
 void tick() {
+	// can gravity drop tetronmino by 1 now?
 	if (tick_counter % fall_interval == 0) {
-		if (can_place(tetromino, tetromino.p.x, tetromino.p.y + 1)) {
-			tetromino.p.y += 1;
+		if (older_pos_y == tetromino.p.y) {
+			if (can_place(tetromino, tetromino.p.x, tetromino.p.y + 1)) {
+				tetromino.p.y += 1;
+			}
+			else {
+				lock_tetromino(tetromino);
+				create_tetromino();
+			}
 		}
 		else {
-			lock_tetromino(tetromino);
-			create_tetromino();
+			tetromino.p.y = tetromino.p.y;
 		}
+		older_pos_y = tetromino.p.y;
 	}
 }
 
