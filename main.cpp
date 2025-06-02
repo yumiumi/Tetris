@@ -29,6 +29,7 @@ const int fH = 21;
 const int tile = 26;
 
 int older_pos_y = 0;
+int row_to_clear = 0;
 
 struct Vec2Int {
 	int x;
@@ -348,6 +349,40 @@ void tick() {
 	}
 }
 
+void clear_line(int row) {
+	for (int x = 1; x < fW - 1; x++) {
+		field[{x, row}].state = EMPTY;
+	}
+	for (int y = row - 1; y >= 0; y--) {
+		for (int x = fW - 1; x >= 1; x--) {
+			if (field[{x, y}].state == HAS_VALUE) {
+				field[{x, y + 1}].state = HAS_VALUE;
+				field[{x, y}].state = EMPTY;
+			}
+		}
+	}
+}
+
+void check_row_clear() {
+	int cells_to_clear = 0;
+	for (int y = 0; y < fH - 1; y++) {
+		for (int x = 1; x < fW - 1; x++) {
+			if (field[{x, y}].state == EMPTY) {
+				cells_to_clear = 0;
+				break;
+			}
+			if (field[{x, y}].state == HAS_VALUE) {
+				cells_to_clear++;
+			}
+		}
+		if (cells_to_clear == fW - 2) {
+			row_to_clear = y; 
+			cells_to_clear = 0;
+			clear_line(row_to_clear);
+		}
+	}
+}
+
 void render() {
 	BeginDrawing();
 		ClearBackground(BLACK);
@@ -395,6 +430,7 @@ int main() {
 		// should we render frame now?
 		if (GetTime() >= next_frame) {
 			next_frame = next_frame + (1.0 / frames_per_sec);
+			check_row_clear();
 			render();
 		}
 
