@@ -25,6 +25,10 @@ int fall_interval = 15; // how often tetromino should drop by 1 cell
 const int fW = 12;
 const int fH = 21;
 
+int choose_from = 7;
+
+int arr[] = { 0, 1, 2, 3, 4, 5, 6 };
+
 // Tile size
 const int tile = 26;
 
@@ -97,7 +101,33 @@ void init_field_state() {
 }
 
 TetrominoType rand_type() {
-	return TetrominoType(GetRandomValue(0,6));
+	// total length of an array (assumed to be 7)
+	int length = sizeof(arr) / sizeof(arr[0]);
+
+	// select an index for tetromino:
+	// val from 0 to (num of allowed elements)
+	int n = GetRandomValue(0, choose_from - 1);
+
+	// get the tetromino value
+	int tetromino_num = arr[n];
+
+	// remove the selected tetromino from the list by shifting elements left
+	// and place the used tetromino at the end of the array
+	for (int i = n + 1; i <= length - 1; i++) {
+		arr[i - 1] = arr[i];
+	}
+	arr[length - 1] = tetromino_num;
+
+	// decrease the pool of available tetrominoes unless only one remains,
+	// then reset
+	if (choose_from > 1) {
+		choose_from--;
+	}
+	else {
+		choose_from = 7;
+	}
+
+	return TetrominoType(tetromino_num);
 }
 
 void create_tetromino() {
@@ -175,7 +205,6 @@ void input_handler() {
 		copy_pos_y = tetromino.p.y;
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.x += 1;
-			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
 		}
 	}
 	if (IsKeyPressed(KEY_LEFT)) {
@@ -183,7 +212,6 @@ void input_handler() {
 		copy_pos_y = tetromino.p.y;
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.x -= 1;
-			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
 		}
 	}
 	if (IsKeyPressed(KEY_DOWN)) {
@@ -192,7 +220,6 @@ void input_handler() {
 		copy_pos_y = tetromino.p.y + 1;
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.y += 1;
-			cout << tetromino.p.x << ", " << tetromino.p.y << endl;
 		}
 		else {
 			lock_tetromino(tetromino);
