@@ -26,14 +26,28 @@ const int fW = 12;
 const int fH = 21;
 
 int choose_from = 7;
+int score = 0;
+int rows_to_clear = 0;
 
 int arr[] = { 0, 1, 2, 3, 4, 5, 6 };
+
+Color TBLUE = Color{ 106, 144, 204, 255 };
+Color TPINK = Color{ 204, 106, 191, 255 };
+Color TYELLOW = Color{ 207, 181, 68, 255 };
+Color TORANGE = Color{ 209, 124, 59, 255 };
+Color TVIOLET = Color{ 112, 95, 184, 255 };
+Color TLIME = Color{ 151, 181, 91, 255 };
+Color TRED = Color{ 207, 64, 64, 255 };
+
+Color GRID_GRAY = Color{ 38, 38, 38, 255 };
+
+Color colors[7] = { TBLUE, TPINK, TYELLOW, TORANGE, TVIOLET, TLIME, TRED };
 
 // Tile size
 const int tile = 26;
 
 int older_pos_y = 0;
-int row_to_clear = 0;
+int row_index = 0;
 
 struct Vec2Int {
 	int x;
@@ -48,6 +62,7 @@ enum TileState {
 
 struct Tile {
 	TileState state;
+	Color tile_color;
 };
 
 // Map is a struct
@@ -66,6 +81,7 @@ Map field;
 
 struct Tetromino {
 	// Tetromino type (I, O, T, J, L, S, Z)
+	Color color;
 	TetrominoType type;
 	Vector2 p = { 0,0 };
 	int local_template[4][4];
@@ -81,6 +97,7 @@ void lock_tetromino(Tetromino t) {
 		for (int x = 0; x < 4; x++) {
 			if (tetromino.local_template[y][x] == 1) {
 				field[{int(x + t.p.x), int(y + t.p.y)}].state = HAS_VALUE;
+				field[{int(x + t.p.x), int(y + t.p.y)}].tile_color = t.color;
 			}
 		}
 	}
@@ -132,6 +149,7 @@ TetrominoType rand_type() {
 
 void create_tetromino() {
 	tetromino.type = rand_type(); 
+	tetromino.color = colors[tetromino.type];
 	tetromino.p = { 4,0 };
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
@@ -303,12 +321,12 @@ void render_map() {
 			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
 
 			if (field[{x, y}].state == EMPTY) {
-				DrawRectangleV(centerize(scale_tile), t_size, BLACK);
-			}
-			if (field[{x, y}].state == BORDER) {
 				DrawRectangleV(centerize(scale_tile), t_size, DARKGRAY);
 			}
 			if (field[{x, y}].state == HAS_VALUE) {
+				DrawRectangleV(centerize(scale_tile), t_size, field[{x, y}].tile_color);
+			}
+			if (field[{x, y}].state == BORDER) {
 				DrawRectangleV(centerize(scale_tile), t_size, GRAY);
 			}
 		}
@@ -317,10 +335,10 @@ void render_map() {
 
 void render_grid() {
 	for (int y = 0; y <= fH; y++) {
-		DrawLineV(centerize({ 0.f, float (y * tile) }), centerize ({ fW * tile , float (y * tile) }), DARKGRAY);
+		DrawLineV(centerize({ 0.f, float (y * tile) }), centerize ({ fW * tile , float (y * tile) }), GRID_GRAY);
 	}
 	for (int x = 0; x <= fW; x++) {
-		DrawLineV(centerize({ float (x * tile), 0.f }), centerize ({ float (x * tile), fH * tile }), DARKGRAY);
+		DrawLineV(centerize({ float (x * tile), 0.f }), centerize ({ float (x * tile), fH * tile }), GRID_GRAY);
 	}
 }
 
@@ -331,7 +349,7 @@ void render_tetromino(Tetromino const& t) {
 			if (tetromino.local_template[y][x] == 1) {
 				Vector2 scale_tile = tile_to_px({ float(x), float(y) });
 				Vector2 piece_pos = centerize(Vector2Add(tile_to_px(t.p), scale_tile));
-				DrawRectangleV(piece_pos, t_size, YELLOW);
+				DrawRectangleV(piece_pos, t_size, tetromino.color);
 			}
 		}
 	}
@@ -403,9 +421,11 @@ void check_row_clear() {
 			}
 		}
 		if (cells_to_clear == fW - 2) {
-			row_to_clear = y; 
+			//rows_to_clear++;
+			row_index = y; 
 			cells_to_clear = 0;
-			clear_line(row_to_clear);
+			clear_line(row_index);
+			y--;
 		}
 	}
 }
