@@ -13,41 +13,33 @@ using namespace std;
 const int scrW = 700;
 const int scrH = 1000;
 
-bool edit_mode = false;
+// width and height of playing field
+const int fW = 10;
+const int fH = 20;
 
-const float ticks_per_sec = 30; // t/sec
+const float ticks_per_sec = 30;
 const float frames_per_sec = 60;
 
-int tick_counter = 0; // count every tick btw drops
-int fall_interval = 15; // how often tetromino should drop by 1 cell
+// count every tick btw drops
+int tick_counter = 0;
+// how often tetromino should drop by 1 cell
+int fall_interval = 15;
 
-// width and height of playing field
-const int fW = 12;
-const int fH = 21;
-
-int choose_from = 7;
-int score = 0;
-int rows_to_clear = 0;
-
-int arr[] = { 0, 1, 2, 3, 4, 5, 6 };
-
-Color TBLUE = Color{ 106, 144, 204, 255 };
-Color TPINK = Color{ 204, 106, 191, 255 };
-Color TYELLOW = Color{ 207, 181, 68, 255 };
-Color TORANGE = Color{ 209, 124, 59, 255 };
-Color TVIOLET = Color{ 112, 95, 184, 255 };
-Color TLIME = Color{ 151, 181, 91, 255 };
-Color TRED = Color{ 207, 64, 64, 255 };
-
-Color GRID_GRAY = Color{ 38, 38, 38, 255 };
-
-Color colors[7] = { TBLUE, TPINK, TYELLOW, TORANGE, TVIOLET, TLIME, TRED };
-
-// Tile size
+// tile size
 const int tile = 26;
 
+// is used in bag randomizer
+int arr[] = { 0, 1, 2, 3, 4, 5, 6 };
+int choose_from = 7;
+
+// used to check if tetromino was dropped before the tick drop
 int older_pos_y = 0;
+
+// used to clear line
 int row_index = 0;
+int rows_to_clear = 0;
+
+bool edit_mode = false;
 
 struct Vec2Int {
 	int x;
@@ -57,7 +49,6 @@ struct Vec2Int {
 enum TileState {
 	EMPTY,
 	HAS_VALUE = 2,
-	BORDER,
 };
 
 struct Tile {
@@ -76,42 +67,34 @@ public:
 		return map[v.y][v.x];
 	}
 };
-
 Map field;
 
 struct Tetromino {
-	// Tetromino type (I, O, T, J, L, S, Z)
 	Color color;
 	TetrominoType type;
 	Vector2 p = { 0,0 };
 	int local_template[4][4];
 };
-
 Tetromino tetromino;
 
-// Copy given tetromino type to the map
+// ---------------------------------------------------------------------------
+
+// the state of each tile on the map at the start
+void init_field_state() {
+	for (int y = 0; y < fH; y++) {
+		for (int x = 0; x < fW; x++) {
+			field[{x,y}].state = EMPTY;
+		}
+	}
+}
+
+// locking tetromino
 void lock_tetromino(Tetromino t) {
-	int pos_x = 1;
-	int pos_y = fH - 4;
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			if (tetromino.local_template[y][x] == 1) {
 				field[{int(x + t.p.x), int(y + t.p.y)}].state = HAS_VALUE;
 				field[{int(x + t.p.x), int(y + t.p.y)}].tile_color = t.color;
-			}
-		}
-	}
-}
-
-// The state of each tile on the map at the start
-void init_field_state() {
-	for (int y = 0; y < fH; y++) {
-		for (int x = 0; x < fW; x++) {
-			if (x > 0 || x < fW - 1 || y < fH - 1 ){
-				field[{x,y}].state = EMPTY;
-			}
-			if (x == 0 || x == fW - 1 || y == fH - 1) {
-				field[{x, y}].state = BORDER;
 			}
 		}
 	}
@@ -200,19 +183,20 @@ bool can_place(Tetromino t, int pos_x, int pos_y) {
 			if (t.local_template[y][x] != 1) {
 				continue;
 			}
-			if (pos_x + x >= 0 && pos_x + x <= fW) {
-				if (pos_y + y >= 0 && pos_y + y <= fH) {
-					int tile_st = int(field[{pos_x + x, pos_y + y}].state);
-					if (tile_st != 0) {
-						return false;
-					}
-				}
+			if (pos_x + x < 0 || pos_x + x >= fW) {
+				return false;
+			}
+			if (pos_y + y < 0 || pos_y + y >= fH) {
+				return false;
+			}
+			int tile_st = int(field[{pos_x + x, pos_y + y}].state);
+			if (tile_st != 0) {
+				return false;
 			}
 		}
 	}
 	return true;
 }
-
 
 void input_handler() {
 	int copy_pos_x = 0;
@@ -297,6 +281,8 @@ void input_handler() {
 	}
 }
 
+// -----------------------------RENDER FUNCTIONS-------------------------------------
+
 // Px_to_tile and tile_to_px - 2 functions. Use centerize in both of them, especially in tile_to_px. 
 
 Vector2 tile_to_px(Vector2 v) {
@@ -321,13 +307,11 @@ void render_map() {
 			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
 
 			if (field[{x, y}].state == EMPTY) {
-				DrawRectangleV(centerize(scale_tile), t_size, DARKGRAY);
+				DrawRectangleV(centerize(scale_tile), t_size, BLACK);
 			}
 			if (field[{x, y}].state == HAS_VALUE) {
-				DrawRectangleV(centerize(scale_tile), t_size, field[{x, y}].tile_color);
-			}
-			if (field[{x, y}].state == BORDER) {
-				DrawRectangleV(centerize(scale_tile), t_size, GRAY);
+				Color t_col = field[{x, y}].tile_color;
+				DrawRectangleV(centerize(scale_tile), t_size, t_col);
 			}
 		}
 	}
@@ -359,6 +343,8 @@ void render_data(bool game_mode) {
 	DrawText("Edit mode: ", 50, 50, 20, WHITE);
 	DrawText(TextFormat("%d", edit_mode ? 1 : 0), 155, 50, 20, WHITE);
 }
+
+// ----------------------------------------------------------------------------------------------
 
 void edit_map() {
 	float w = scrW/2 - fW/2 * tile;
@@ -395,13 +381,14 @@ void tick() {
 }
 
 void clear_line(int row) {
-	for (int x = 1; x < fW - 1; x++) {
+	for (int x = 0; x < fW; x++) {
 		field[{x, row}].state = EMPTY;
 	}
 	for (int y = row - 1; y >= 0; y--) {
-		for (int x = fW - 1; x >= 1; x--) {
+		for (int x = fW - 1; x >= 0; x--) {
 			if (field[{x, y}].state == HAS_VALUE) {
-				field[{x, y + 1}].state = HAS_VALUE;
+				field[{x, y + 1}].state = field[{x, y}].state;
+				field[{x, y + 1}].tile_color = field[{x, y}].tile_color;
 				field[{x, y}].state = EMPTY;
 			}
 		}
@@ -410,8 +397,8 @@ void clear_line(int row) {
 
 void check_row_clear() {
 	int cells_to_clear = 0;
-	for (int y = 0; y < fH - 1; y++) {
-		for (int x = 1; x < fW - 1; x++) {
+	for (int y = 0; y < fH; y++) {
+		for (int x = 0; x < fW; x++) {
 			if (field[{x, y}].state == EMPTY) {
 				cells_to_clear = 0;
 				break;
@@ -420,8 +407,7 @@ void check_row_clear() {
 				cells_to_clear++;
 			}
 		}
-		if (cells_to_clear == fW - 2) {
-			//rows_to_clear++;
+		if (cells_to_clear == fW) {
 			row_index = y; 
 			cells_to_clear = 0;
 			clear_line(row_index);
