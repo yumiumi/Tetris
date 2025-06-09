@@ -49,6 +49,7 @@ struct Vec2Int {
 enum TileState {
 	EMPTY,
 	HAS_VALUE = 2,
+	EDITED,
 };
 
 struct Tile {
@@ -133,7 +134,7 @@ TetrominoType rand_type() {
 void create_tetromino() {
 	tetromino.type = rand_type(); 
 	tetromino.color = colors[tetromino.type];
-	tetromino.p = { 4,0 };
+	tetromino.p = { 3,0 };
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			tetromino.local_template[y][x] = tetrominoShapes[tetromino.type][y][x];
@@ -283,18 +284,12 @@ void input_handler() {
 
 // -----------------------------RENDER FUNCTIONS-------------------------------------
 
-// Px_to_tile and tile_to_px - 2 functions. Use centerize in both of them, especially in tile_to_px. 
-
-Vector2 tile_to_px(Vector2 v) {
-	return { v.x * tile, v.y * tile };
-}
-
-// Function that moves position of given tile to the center of the screen
-// returns position in pixels
-Vector2 centerize(Vector2 tile_pos) {
+Vector2 convert_to_px(Vector2 v) {
+	Vector2 v_px = { v.x * tile, v.y * tile };
+	//centerize
 	float w = scrW/2 - fW/2 * tile;
 	float h = scrH/2 - fH/2 * tile;
-	return { tile_pos.x + w , tile_pos.y + h };
+	return { v_px.x + w , v_px.y + h };
 }
 
 // Check tile's state to render it
@@ -303,15 +298,16 @@ void render_map() {
 	Vector2 t_size = { tile, tile };
 	for (int y = 0; y < fH; y++) {
 		for (int x = 0; x < fW; x++) {
-
-			Vector2 scale_tile = tile_to_px({ float(x), float(y) });
-
+			Vector2 v = { float(x), float(y) };
 			if (field[{x, y}].state == EMPTY) {
-				DrawRectangleV(centerize(scale_tile), t_size, BLACK);
+				DrawRectangleV(convert_to_px(v), t_size, BLACK);
 			}
 			if (field[{x, y}].state == HAS_VALUE) {
 				Color t_col = field[{x, y}].tile_color;
-				DrawRectangleV(centerize(scale_tile), t_size, t_col);
+				DrawRectangleV(convert_to_px(v), t_size, t_col);
+			}
+			if (field[{x, y}].state == EDITED) {
+				DrawRectangleV(convert_to_px(v), t_size, GRAY);
 			}
 		}
 	}
@@ -319,10 +315,10 @@ void render_map() {
 
 void render_grid() {
 	for (int y = 0; y <= fH; y++) {
-		DrawLineV(centerize({ 0.f, float (y * tile) }), centerize ({ fW * tile , float (y * tile) }), GRID_GRAY);
+		DrawLineV(convert_to_px({ 0.f, float(y) }), convert_to_px({ fW, float(y) }), GRID_GRAY);
 	}
 	for (int x = 0; x <= fW; x++) {
-		DrawLineV(centerize({ float (x * tile), 0.f }), centerize ({ float (x * tile), fH * tile }), GRID_GRAY);
+		DrawLineV(convert_to_px({ float(x), 0.f }), convert_to_px({ float(x), fH }), GRID_GRAY);
 	}
 }
 
@@ -331,8 +327,7 @@ void render_tetromino(Tetromino const& t) {
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			if (tetromino.local_template[y][x] == 1) {
-				Vector2 scale_tile = tile_to_px({ float(x), float(y) });
-				Vector2 piece_pos = centerize(Vector2Add(tile_to_px(t.p), scale_tile));
+				Vector2 piece_pos = convert_to_px(Vector2Add(t.p, { float(x), float(y) }));
 				DrawRectangleV(piece_pos, t_size, tetromino.color);
 			}
 		}
@@ -357,7 +352,7 @@ void edit_map() {
 		Vector2 mouse_tile = { floor(mouse_px.x / tile), floor(mouse_px.y / tile) };
 		cout << mouse_tile.x << ", " << mouse_tile.y << endl;
 
-		field[{int(mouse_tile.x), int(mouse_tile.y)}].state = HAS_VALUE;
+		field[{int(mouse_tile.x), int(mouse_tile.y)}].state = EDITED;
 	}
 }
 
@@ -373,9 +368,6 @@ void tick() {
 				create_tetromino();
 			}
 		}
-		else {
-			tetromino.p.y = tetromino.p.y;
-		}
 		older_pos_y = tetromino.p.y;
 	}
 }
@@ -386,7 +378,7 @@ void clear_line(int row) {
 	}
 	for (int y = row - 1; y >= 0; y--) {
 		for (int x = fW - 1; x >= 0; x--) {
-			if (field[{x, y}].state == HAS_VALUE) {
+			if (field[{x, y}].state == HAS_VALUE || field[{x, y}].state == EDITED) {
 				field[{x, y + 1}].state = field[{x, y}].state;
 				field[{x, y + 1}].tile_color = field[{x, y}].tile_color;
 				field[{x, y}].state = EMPTY;
@@ -403,7 +395,7 @@ void check_row_clear() {
 				cells_to_clear = 0;
 				break;
 			}
-			if (field[{x, y}].state == HAS_VALUE) {
+			if (field[{x, y}].state == HAS_VALUE || field[{x, y}].state == EDITED) {
 				cells_to_clear++;
 			}
 		}
