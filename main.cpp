@@ -17,13 +17,13 @@ const int scrH = 1000;
 const int fW = 10;
 const int fH = 20;
 
-const float ticks_per_sec = 30;
+const float ticks_per_sec = 60;
 const float frames_per_sec = 60;
 
 // count every tick btw drops
 int tick_counter = 0;
 // how often tetromino should drop by 1 cell
-int fall_interval = 15;
+int fall_interval = 30;
 
 // tile size
 const int tile = 26;
@@ -199,25 +199,66 @@ bool can_place(Tetromino t, int pos_x, int pos_y) {
 	return true;
 }
 
+double start_holding = 0.f;
+double initial_delay = 0.2f;
+
+bool moving_left = false;
+bool moving_right = false;
+bool moving_down = false;
+
 void input_handler() {
 	int copy_pos_x = 0;
 	int copy_pos_y = 0;
 
-	if (IsKeyPressed(KEY_RIGHT)) {
-		copy_pos_x = tetromino.p.x + 1;
-		copy_pos_y = tetromino.p.y;
-		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
-			tetromino.p.x += 1;
-		}
-	}
 	if (IsKeyPressed(KEY_LEFT)) {
+		start_holding = GetTime();
+		moving_left = true;
 		copy_pos_x = tetromino.p.x - 1;
 		copy_pos_y = tetromino.p.y;
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.x -= 1;
 		}
 	}
+	if (IsKeyReleased(KEY_LEFT)) {
+		moving_left = false;
+	}
+	if (moving_left && GetTime() - start_holding >= initial_delay) {
+		int move_interval = 2;
+		if (tick_counter % move_interval == 0) {
+			copy_pos_x = tetromino.p.x - 1;
+			copy_pos_y = tetromino.p.y;
+			if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+				tetromino.p.x -= 1;
+			}
+		}
+	}
+
+	if (IsKeyPressed(KEY_RIGHT)) {
+		start_holding = GetTime();
+		moving_right = true;
+		copy_pos_x = tetromino.p.x + 1;
+		copy_pos_y = tetromino.p.y;
+		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+			tetromino.p.x += 1;
+		}
+	}
+	if (IsKeyReleased(KEY_RIGHT)) {
+		moving_right = false;
+	}
+	if (moving_right && GetTime() - start_holding >= initial_delay) {
+		int move_interval = 2;
+		if (tick_counter % move_interval == 0) {
+			copy_pos_x = tetromino.p.x + 1;
+			copy_pos_y = tetromino.p.y;
+			if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+				tetromino.p.x += 1;
+			}
+		}
+	}
+
 	if (IsKeyPressed(KEY_DOWN)) {
+		start_holding = GetTime();
+		moving_down = true;
 		older_pos_y = tetromino.p.y;
 		copy_pos_x = tetromino.p.x;
 		copy_pos_y = tetromino.p.y + 1;
@@ -229,6 +270,24 @@ void input_handler() {
 			create_tetromino();
 		}
 	}
+	if (IsKeyReleased(KEY_DOWN)) {
+		moving_down = false;
+	}
+	if (moving_down && GetTime() - start_holding >= initial_delay) {
+		int move_interval = 2;
+		if (tick_counter % move_interval == 0) {
+			copy_pos_x = tetromino.p.x;
+			copy_pos_y = tetromino.p.y + 1;
+			if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+				tetromino.p.y += 1;
+			}
+			else {
+				lock_tetromino(tetromino);
+				create_tetromino();
+			}
+		}
+	}
+
 	if (IsKeyPressed(KEY_UP)) {
 		Tetromino t_copy = tetromino;
 		copy_pos_x = t_copy.p.x;
