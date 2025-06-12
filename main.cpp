@@ -15,7 +15,7 @@ const int scrH = 1000;
 
 // width and height of playing field
 const int fW = 10;
-const int fH = 20;
+const int fH = 22;
 
 const float ticks_per_sec = 60;
 const float frames_per_sec = 60;
@@ -187,10 +187,11 @@ bool can_place(Tetromino t, int pos_x, int pos_y) {
 			if (pos_x + x < 0 || pos_x + x >= fW) {
 				return false;
 			}
-			if (pos_y + y < 0 || pos_y + y >= fH) {
+			if (pos_y + y >= fH) {
 				return false;
 			}
 			int tile_st = int(field[{pos_x + x, pos_y + y}].state);
+			assert(tile_st >= 0 && tile_st <= 3);
 			if (tile_st != 0) {
 				return false;
 			}
@@ -373,11 +374,11 @@ void render_map() {
 }
 
 void render_grid() {
-	for (int y = 0; y <= fH; y++) {
+	for (int y = 2; y <= fH; y++) {
 		DrawLineV(convert_to_px({ 0.f, float(y) }), convert_to_px({ fW, float(y) }), GRID_GRAY);
 	}
 	for (int x = 0; x <= fW; x++) {
-		DrawLineV(convert_to_px({ float(x), 0.f }), convert_to_px({ float(x), fH }), GRID_GRAY);
+		DrawLineV(convert_to_px({ float(x), 2.f }), convert_to_px({ float(x), fH }), GRID_GRAY);
 	}
 }
 
