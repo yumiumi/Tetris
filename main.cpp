@@ -77,6 +77,7 @@ struct Tetromino {
 	int local_template[4][4];
 };
 Tetromino tetromino;
+Tetromino t_ghost;
 
 // ---------------------------------------------------------------------------
 
@@ -140,6 +141,16 @@ void create_tetromino() {
 			tetromino.local_template[y][x] = tetrominoShapes[tetromino.type][y][x];
 		}
 	}
+
+	//ghost 
+	t_ghost.p = tetromino.p;
+	t_ghost.type = tetromino.type;
+	t_ghost.color = GHOST_GRAY;
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			t_ghost.local_template[y][x] = tetromino.local_template[y][x];
+		}
+	}
 }
 
 // Rotates by 90 
@@ -200,6 +211,28 @@ bool can_place(Tetromino t, int pos_x, int pos_y) {
 	return true;
 }
 
+bool can_place_ghost( int pos_x, int pos_y ) {
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			if (tetromino.local_template[y][x] != 1) {
+				continue;
+			}
+			if (pos_x + x < 0 || pos_x + x >= fW) {
+				return false;
+			}
+			if (pos_y + y >= fH) {
+				return false;
+			}
+			int tile_st = int(field[{pos_x + x, pos_y + y}].state);
+			assert(tile_st >= 0 && tile_st <= 3);
+			if (tile_st != 0) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 double start_holding = 0.f;
 double initial_delay = 0.2f;
 
@@ -219,7 +252,7 @@ void input_handler() {
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.x -= 1;
 		}
-	}
+ 	}
 	if (IsKeyReleased(KEY_LEFT)) {
 		moving_left = false;
 	}
@@ -382,17 +415,26 @@ void render_grid() {
 	}
 }
 
-void render_tetromino(Tetromino const& t) {
+
+void render_tetromino(Tetromino const& t, Tetromino &ghost) {
 	Vector2 t_size = { tile, tile };
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			if (tetromino.local_template[y][x] == 1) {
+				Vector2 ghost_pos = convert_to_px(Vector2Add(ghost.p, { float(x), float(y) }));
+				int xx = ghost.p.x;
+				int yy = ghost.p.y;
+				DrawRectangleV(ghost_pos, t_size, t_ghost.color);
+
 				Vector2 piece_pos = convert_to_px(Vector2Add(t.p, { float(x), float(y) }));
+				int tx = t.p.x;
+				int ty = t.p.y;
 				DrawRectangleV(piece_pos, t_size, tetromino.color);
 			}
 		}
 	}
 }
+
 
 void render_data(bool game_mode) {
 	DrawText("Edit mode: ", 50, 50, 20, WHITE);
@@ -473,7 +515,7 @@ void render() {
 		ClearBackground(BLACK);
 			render_map();
 			render_grid();
-			render_tetromino(tetromino);
+			render_tetromino(tetromino, t_ghost);
 			render_data(edit_mode);
 	EndDrawing();
 }
@@ -505,11 +547,22 @@ int main() {
 
 		input_handler();
 
+
 		// should we simulate tick now?
 		if (GetTime() >= next_tick) {
 			next_tick = next_tick + (1.0 / ticks_per_sec);
 			tick_counter++;
 			tick();
+		}
+
+		t_ghost.p.x = tetromino.p.x;
+		t_ghost.p.y = tetromino.p.y;
+		float copy_pos_x = t_ghost.p.x;
+		float copy_pos_y = t_ghost.p.y;
+
+		while(can_place_ghost( copy_pos_x, copy_pos_y + 1)){
+			t_ghost.p.y += 1;
+			copy_pos_y = t_ghost.p.y;
 		}
 
 		// should we render frame now?

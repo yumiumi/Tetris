@@ -65,4 +65,6 @@ Color TRED = Color{ 207, 64, 64, 255 };
 
 Color GRID_GRAY = Color{ 38, 38, 38, 255 };
 
+Color GHOST_GRAY = Color{ 60, 60, 60, 255/2 };
+
 Color colors[7] = { TBLUE, TPINK, TYELLOW, TORANGE, TVIOLET, TLIME, TRED };
