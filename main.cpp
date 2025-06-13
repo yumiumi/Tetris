@@ -154,7 +154,7 @@ void create_tetromino() {
 }
 
 // Rotates by 90 
-void rotate(Tetromino* t) {
+void rotate(Tetromino* t, float deg) {
 	int local_tpl_copy[4][4];
 
 	for (int y = 0; y < 4; y++) {
@@ -181,7 +181,7 @@ void rotate(Tetromino* t) {
 			if (local_tpl_copy[y][x] == 1) {
 				Vector2 cell = { float(x), float(y) };
 				Vector2 rel_center = Vector2Subtract(cell, center);
-				Vector2 rotated_v = Vector2Rotate(rel_center, 90.f * DEG2RAD);
+				Vector2 rotated_v = Vector2Rotate(rel_center, deg * DEG2RAD);
 				cell = Vector2Add(rotated_v, center);
 				t->local_template[int(round(cell.y))][int(round(cell.x))] = 1;
 			}
@@ -234,7 +234,7 @@ bool can_place_ghost( int pos_x, int pos_y ) {
 }
 
 double start_holding = 0.f;
-double initial_delay = 0.2f;
+double initial_delay = 0.19f;
 
 bool moving_left = false;
 bool moving_right = false;
@@ -322,47 +322,90 @@ void input_handler() {
 		}
 	}
 
-	if (IsKeyPressed(KEY_UP)) {
+	if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_X)) {
 		Tetromino t_copy = tetromino;
 		copy_pos_x = t_copy.p.x;
 		copy_pos_y = t_copy.p.y;
-		rotate(&t_copy);
+		rotate(&t_copy, 90.f);
 		if (can_place(t_copy, copy_pos_x, copy_pos_y)) {
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x + 1, copy_pos_y)) {
 			tetromino.p.x += 1;
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x - 1, copy_pos_y)) {
 			tetromino.p.x -= 1;
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x, copy_pos_y - 1)) {
 			tetromino.p.y -= 1; 
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x + 1, copy_pos_y - 1)) {
 			tetromino.p.x += 1;
 			tetromino.p.y -= 1;
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x - 1, copy_pos_y - 1)) {
 			tetromino.p.x -= 1;
 			tetromino.p.y -= 1;
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x + 2, copy_pos_y - 2)) {
 			tetromino.p.x += 2;
 			tetromino.p.y -= 2;
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 		else if (can_place(t_copy, copy_pos_x - 2, copy_pos_y - 2)) {
 			tetromino.p.x -= 2;
 			tetromino.p.y -= 2;
-			rotate(&tetromino);
+			rotate(&tetromino, 90.f);
 		}
 	}
+
+	if (IsKeyPressed(KEY_Z)) {
+		Tetromino t_copy = tetromino;
+		copy_pos_x = t_copy.p.x;
+		copy_pos_y = t_copy.p.y;
+		rotate(&t_copy, -90.f);
+		if (can_place(t_copy, copy_pos_x, copy_pos_y)) {
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x + 1, copy_pos_y)) {
+			tetromino.p.x += 1;
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x - 1, copy_pos_y)) {
+			tetromino.p.x -= 1;
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x, copy_pos_y - 1)) {
+			tetromino.p.y -= 1; 
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x + 1, copy_pos_y - 1)) {
+			tetromino.p.x += 1;
+			tetromino.p.y -= 1;
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x - 1, copy_pos_y - 1)) {
+			tetromino.p.x -= 1;
+			tetromino.p.y -= 1;
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x + 2, copy_pos_y - 2)) {
+			tetromino.p.x += 2;
+			tetromino.p.y -= 2;
+			rotate(&tetromino, -90.f);
+		}
+		else if (can_place(t_copy, copy_pos_x - 2, copy_pos_y - 2)) {
+			tetromino.p.x -= 2;
+			tetromino.p.y -= 2;
+			rotate(&tetromino, -90.f);
+		}
+	}
+
 	if (IsKeyPressed(KEY_SPACE)) {
 		copy_pos_x = tetromino.p.x;
 		copy_pos_y = tetromino.p.y;
