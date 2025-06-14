@@ -20,10 +20,11 @@ const int fH = 22;
 const float ticks_per_sec = 60;
 const float frames_per_sec = 60;
 
-// count every tick btw drops
-int tick_counter = 0;
-// how often tetromino should drop by 1 cell
-int fall_interval = 30;
+// check when tetromino should drop by a cell
+float fall_counter = 0;
+
+// how many ticks does it take for a piece to fall by cell (cell/tick)
+float gravity = 1.0/48;
 
 // tile size
 const int tile = 26;
@@ -233,12 +234,25 @@ bool can_place_ghost( int pos_x, int pos_y ) {
 	return true;
 }
 
+// moment when the key was pressed
 double start_holding = 0.f;
-double initial_delay = 0.19f;
 
+// delay before piece starts moving continuously
+double initial_delay = 0.1f;
+
+// flag indicating the direction the piece is moving
 bool moving_left = false;
 bool moving_right = false;
 bool moving_down = false;
+
+float l_repeat_counter = 0.f;
+float r_repeat_counter = 0.f;
+float d_repeat_counter = 0.f;
+
+float repeat_threshold = 1.0f;
+
+// how much ticks we need to pass to move
+float repeat_rate = 1.0 / 2;
 
 void input_handler() {
 	int copy_pos_x = 0;
@@ -250,19 +264,26 @@ void input_handler() {
 		copy_pos_x = tetromino.p.x - 1;
 		copy_pos_y = tetromino.p.y;
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
+			// immediate first move
 			tetromino.p.x -= 1;
 		}
  	}
 	if (IsKeyReleased(KEY_LEFT)) {
 		moving_left = false;
+		l_repeat_counter = 0;
 	}
+	// while LEFT is being held down and the initial delay has passed
 	if (moving_left && GetTime() - start_holding >= initial_delay) {
-		int move_interval = 2;
-		if (tick_counter % move_interval == 0) {
+		l_repeat_counter += repeat_rate;
+		if (l_repeat_counter >= repeat_threshold) {
 			copy_pos_x = tetromino.p.x - 1;
 			copy_pos_y = tetromino.p.y;
 			if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 				tetromino.p.x -= 1;
+				l_repeat_counter -= repeat_threshold;
+			}
+			else {
+				l_repeat_counter = 0;
 			}
 		}
 	}
@@ -278,14 +299,19 @@ void input_handler() {
 	}
 	if (IsKeyReleased(KEY_RIGHT)) {
 		moving_right = false;
+		r_repeat_counter = 0;
 	}
 	if (moving_right && GetTime() - start_holding >= initial_delay) {
-		int move_interval = 2;
-		if (tick_counter % move_interval == 0) {
+		r_repeat_counter += repeat_rate;
+		if (r_repeat_counter >= repeat_threshold) {
 			copy_pos_x = tetromino.p.x + 1;
 			copy_pos_y = tetromino.p.y;
 			if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 				tetromino.p.x += 1;
+				r_repeat_counter -= repeat_threshold;
+			}
+			else {
+				r_repeat_counter = 0;
 			}
 		}
 	}
@@ -306,18 +332,21 @@ void input_handler() {
 	}
 	if (IsKeyReleased(KEY_DOWN)) {
 		moving_down = false;
+		d_repeat_counter = 0;
 	}
 	if (moving_down && GetTime() - start_holding >= initial_delay) {
-		int move_interval = 2;
-		if (tick_counter % move_interval == 0) {
+		d_repeat_counter += repeat_rate;
+		if (d_repeat_counter >= repeat_threshold) {
 			copy_pos_x = tetromino.p.x;
 			copy_pos_y = tetromino.p.y + 1;
 			if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 				tetromino.p.y += 1;
+				d_repeat_counter -= repeat_threshold;
 			}
 			else {
 				lock_tetromino(tetromino);
 				create_tetromino();
+				d_repeat_counter = 0;
 			}
 		}
 	}
@@ -503,7 +532,8 @@ void edit_map() {
 
 void tick() {
 	// can gravity drop tetronmino by 1 now?
-	if (tick_counter % fall_interval == 0) {
+	// when fall_counter hits 1, enough ticks have passed for the drop
+	if (fall_counter >= 1) {
 		if (older_pos_y == tetromino.p.y) {
 			if (can_place(tetromino, tetromino.p.x, tetromino.p.y + 1)) {
 				tetromino.p.y += 1;
@@ -514,6 +544,7 @@ void tick() {
 			}
 		}
 		older_pos_y = tetromino.p.y;
+		fall_counter -= 1;
 	}
 }
 
@@ -594,7 +625,7 @@ int main() {
 		// should we simulate tick now?
 		if (GetTime() >= next_tick) {
 			next_tick = next_tick + (1.0 / ticks_per_sec);
-			tick_counter++;
+			fall_counter += gravity;
 			tick();
 		}
 
