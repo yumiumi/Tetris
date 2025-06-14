@@ -40,7 +40,13 @@ int older_pos_y = 0;
 int row_index = 0;
 int rows_to_clear = 0;
 
+int gravity_by_lvl[] = { 40, 35, 30, 25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1 };
+
 bool edit_mode = false;
+
+int level = 0;
+int cleared_lines = 0;
+int lines_to_level_up = 2;
 
 struct Vec2Int {
 	int x;
@@ -579,9 +585,16 @@ void check_row_clear() {
 			row_index = y; 
 			cells_to_clear = 0;
 			clear_line(row_index);
+			cleared_lines++;
+			cout << cleared_lines << endl;
 			y--;
 		}
 	}
+}
+
+
+void change_gravity(int lvl) {
+	gravity = 1.0 / gravity_by_lvl[lvl];
 }
 
 void render() {
@@ -621,6 +634,13 @@ int main() {
 
 		input_handler();
 
+		if (cleared_lines >= lines_to_level_up) {
+			level++;
+			cout << "lvl = " << level << endl;
+			cleared_lines = 0;
+			change_gravity(level);
+			cout << "gravity now = " << gravity_by_lvl[level] << endl;
+		}
 
 		// should we simulate tick now?
 		if (GetTime() >= next_tick) {
