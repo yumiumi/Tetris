@@ -598,6 +598,15 @@ void check_row_clear() {
 	}
 }
 
+void game_over(){
+	for (int y = 0; y < fH; y++) {
+		for (int x = 0; x < fW; x++) {
+			field[{x, y}].state = EMPTY;
+		}
+	}
+	create_tetromino();
+}
+
 
 void change_gravity(int lvl) {
 	gravity = 1.0 / gravity_by_lvl[lvl];
@@ -612,6 +621,7 @@ void render() {
 			//render_data(edit_mode);
 	EndDrawing();
 }
+
 
 int main() {
 	//Initialization
@@ -655,9 +665,16 @@ int main() {
 			is_grounded();
 			if (is_grounded()) {
 				lock_timer++;
-				//cout << lock_timer << endl;
 			}
 			tick();
+
+			for (int y = 0; y < 2; y++) {
+				for (int x = 0; x < fW; x++) {
+					if (field[{x, y}].state == HAS_VALUE) {
+						game_over();
+					}
+				}
+			}
 		}
 
 		t_ghost.p.x = tetromino.p.x;
