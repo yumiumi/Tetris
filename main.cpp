@@ -48,7 +48,7 @@ int level = 0;
 int cleared_lines = 0;
 int lines_to_level_up = 2;
 
-float lock_delay = 60;
+float lock_delay = 30;
 
 struct Vec2Int {
 	int x;
@@ -643,7 +643,7 @@ int main() {
 		if (cleared_lines >= lines_to_level_up) {
 			level++;
 			cout << "lvl = " << level << endl;
-			cleared_lines = 0;
+			cleared_lines -= lines_to_level_up;
 			change_gravity(level);
 			cout << "gravity now = " << gravity_by_lvl[level] << endl;
 		}
