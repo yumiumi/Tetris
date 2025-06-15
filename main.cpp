@@ -48,6 +48,8 @@ int level = 0;
 int cleared_lines = 0;
 int lines_to_level_up = 2;
 
+float lock_delay = 60;
+
 struct Vec2Int {
 	int x;
 	int y;
@@ -331,10 +333,6 @@ void input_handler() {
 		if (can_place(tetromino, copy_pos_x, copy_pos_y)) {
 			tetromino.p.y += 1;
 		}
-		else {
-			lock_tetromino(tetromino);
-			create_tetromino();
-		}
 	}
 	if (IsKeyReleased(KEY_DOWN)) {
 		moving_down = false;
@@ -350,8 +348,6 @@ void input_handler() {
 				d_repeat_counter -= repeat_threshold;
 			}
 			else {
-				lock_tetromino(tetromino);
-				create_tetromino();
 				d_repeat_counter = 0;
 			}
 		}
@@ -536,6 +532,14 @@ void edit_map() {
 	}
 }
 
+bool is_grounded(){
+	if (can_place(tetromino, tetromino.p.x, tetromino.p.y + 1)) {
+		return false;
+	}
+	return true;
+}
+
+float lock_timer = 0.f;
 void tick() {
 	// can gravity drop tetronmino by 1 now?
 	// when fall_counter hits 1, enough ticks have passed for the drop
@@ -544,15 +548,17 @@ void tick() {
 			if (can_place(tetromino, tetromino.p.x, tetromino.p.y + 1)) {
 				tetromino.p.y += 1;
 			}
-			else {
-				lock_tetromino(tetromino);
-				create_tetromino();
-			}
 		}
 		older_pos_y = tetromino.p.y;
 		fall_counter -= 1;
 	}
+	if (is_grounded() && lock_timer >= lock_delay) {
+		lock_tetromino(tetromino);
+		create_tetromino();
+		lock_timer = 0;
+	}
 }
+
 
 void clear_line(int row) {
 	for (int x = 0; x < fW; x++) {
@@ -603,7 +609,7 @@ void render() {
 			render_map();
 			render_grid();
 			render_tetromino(tetromino, t_ghost);
-			render_data(edit_mode);
+			//render_data(edit_mode);
 	EndDrawing();
 }
 
@@ -646,6 +652,11 @@ int main() {
 		if (GetTime() >= next_tick) {
 			next_tick = next_tick + (1.0 / ticks_per_sec);
 			fall_counter += gravity;
+			is_grounded();
+			if (is_grounded()) {
+				lock_timer++;
+				//cout << lock_timer << endl;
+			}
 			tick();
 		}
 
